@@ -4,9 +4,10 @@ import numpy as np
 from scipy import misc
 from io import BytesIO
 from PIL import Image
+import os
 
 # Load JSON File
-with open('Dataset/train.json') as data_file:
+with open('Data/train.json') as data_file:
     data = json.load(data_file);
 
 images = data["images"]	# list
@@ -30,7 +31,7 @@ for i in annotations:
 
 # Print count of images per label (greater than 2000)
 # Output: accepted_label = [1,2,...,128]
-for label_id, value in sorted(label.iteritems()):
+for label_id, value in sorted(label.items()):
 	if(value > 2000): #2500
 		dataset_counter = dataset_counter + value;
 		print(label_id +" : "+ str(value));
@@ -57,20 +58,28 @@ label_list = []
 accepted_id.sort()
 
 for ids in accepted_id:
-	url = images[ids-1]["url"][0]
-	url_list.append(url)
-	label_list.append(annotations[ids-1]["label_id"])
+    url = images[ids-1]["url"][0]
+    filename = url.split("/")[-1]
+    url_list.append(url)
+    label_list.append(annotations[ids-1]["label_id"])
+    directory = "./" + str(annotations[ids-1]["label_id"]) + "/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    try:
+        res = requests.get(url)
+        if res.status_code == 200:
+            # Save to folder
+            open(directory+filename, 'wb').write(res.content)
 
-	try:
-		res = requests.get(url)
-		if res.status_code == 200:
-			img_arr = np.array(Image.open(BytesIO(res.content)))
-			img_array_list.append(img_arr)
-	except requests.exceptions.RequestException as e:
-		print("MISSING: " + url)
+		#img_arr = np.array(Image.open(BytesIO(res.content)))
+		#img_array_list.append(img_arr)
+    except requests.exceptions.RequestException as e:
+        print("MISSING: " + url)
 
+'''
 # Random Sampling
 for i in range(80):
 	#print(url_list[i*700])
 	print(img_array_list[i*700])
 	#print(label_list[i*700])
+'''
